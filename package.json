@@ -1,0 +1,23 @@
+{
+  "name": "gnosis-insider",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gatigno/gnosis-insider.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gatigno/gnosis-insider/issues"
+  },
+  "homepage": "https://github.com/gatigno/gnosis-insider#readme",
+  "dependencies": {
+    "botmaster": "^3.1.1",
+    "botmaster-twitter-dm": "^1.0.0"
+  }
+}
