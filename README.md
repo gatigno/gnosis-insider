@@ -8,5 +8,5 @@ gnosis-insider
 * runnning app with environment
 ```
 export NODE_ENV=production
-node my-app.js
+node app.js
 ```
