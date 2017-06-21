@@ -1,29 +1,26 @@
+//( while true; do lt -p 3000 -s gnosis; done; )
+// export NODE_ENV=production
+// node my-app.js
+
 const Botmaster = require('botmaster');
 const TelegramBot = require('botmaster-telegram');
-const TwitterBot = require('botmaster-twitter-dm');
 const request = require('request');
+const sheetsu = require('sheetsu-node');
+const config = require('config');
 const botmaster = new Botmaster();
 
-
-
-// const twitterSettings = {
-//   credentials: {
-//     consumerKey: 'bxnTSMG1hQxghepBJmQWKzVJ6',
-//     consumerSecret: 'RFu89xzSMz1OreFlumX385xXI1Dz0LwASqwxVMs5SPno5uiceD',
-//     accessToken: '874495304380362752-c8W3dukDtDaDofGpeyVtcM15gUg11Ei',
-//     accessTokenSecret: 'T8Ntim06BjTnZ8YjOXaGwQMVkpFot8clUqwtlgUdgXQcN',
-//   }
-// }
-//
-// const twitterBot = new TwitterBot(twitterSettings);
-// botmaster.addBot(twitterBot);
-
+// create a sheetsu config file
+const sheetsuConfig = {
+  address: config.get('sheetsu.sheetAddress'),
+};
+// Create new client
+const sheetsuClient = sheetsu(sheetsuConfig);
 
 const telegramSettings = {
   credentials: {
-    authToken: '378448645:AAF0q3tO6f9Avxmc2xqHyQjf7Dvj-EisbRc',
+    authToken: config.get('telegram.authToken'),
   },
-  webhookEndpoint: '/webhook1234/',
+  webhookEndpoint: config.get('telegram.webhookEndpoint'),
 };
 
 const telegramBot = new TelegramBot(telegramSettings);
@@ -40,12 +37,10 @@ botmaster.use({
   controller: (bot, update) => {
     if (bot.type === 'telegram') {
       if (!(update.sender.id in cacheData.telegram)) {
-        cacheData.telegram[update.sender.id] = [];
+        cacheData.telegram[update.sender.id] = {};
       }
-      var arrayForCache = {
-        'text': update.message.text,
-        'seq': update.message.seq
-      };
+      cacheData.telegram[update.sender.id].text = update.message.text;
+      cacheData.telegram[update.sender.id].seq = update.message.seq;
 
       if (update.message.text.match(/\/start \d/g)) {
         const regex = /\/start (\d)/g;
@@ -64,17 +59,15 @@ botmaster.use({
           uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/bot/search?marketID=' + marketId
         }, function(error, response, body) {
           if (!error && response.statusCode == 200) {
-            arrayForCache.apiData = JSON.parse(body)[0];
-            cacheData.telegram[update.sender.id].push(arrayForCache);
-            var flowMatrix = arrayForCache.apiData.flow.split(';');
-            var questionOptions = arrayForCache.apiData[flowMatrix[1]].split(';');
-
+            cacheData.telegram[update.sender.id].apiData = JSON.parse(body)[0];
+            var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
+            var questionOptions = cacheData.telegram[update.sender.id].apiData[flowMatrix[1]].split(';');
             var message = {
               recipient: {
                 id: update.sender.id,
               },
               message: {
-                text: arrayForCache.apiData[flowMatrix[0]],
+                text: cacheData.telegram[update.sender.id].apiData[flowMatrix[0]],
                 quick_replies: []
               },
             };
@@ -85,14 +78,23 @@ botmaster.use({
             });
 
             return bot.sendMessage(message);
-            // return bot.reply(update, arrayForCache.apiData[flowMatrix[0]]);
           }
         });
 
       } else {
-
+        // Adds single row to sheet named "predictions"
+        var date = new Date(update.timestamp);
+        sheetsuClient.create({
+          "marketID": cacheData.telegram[update.sender.id].apiData.marketID,
+          "timestamp": (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds(),
+          "userID": "",
+          "prediction": update.message.text
+        }, "predictions").then(function(data) {
+          // console.log(data);
+        }, function(err) {
+          console.log(err);
+        });
       }
     }
-    // return bot.reply(update, update.message.text);
   }
 });
