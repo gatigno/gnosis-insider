@@ -1,7 +1,3 @@
-//( while true; do lt -p 3000 -s gnosis; done; )
-// export NODE_ENV=production
-// node my-app.js
-
 const Botmaster = require('botmaster');
 const TelegramBot = require('botmaster-telegram');
 const request = require('request');
