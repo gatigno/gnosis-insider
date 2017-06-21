@@ -1,0 +1,9 @@
+{
+  "telegram": {
+    "authToken": "xxxxxxxxxxxxxxxxxxxxxxx",
+    "webhookEndpoint": "/webhook1234/"
+  },
+  "sheetsu": {
+    "sheetAddress": "02eb4bdf06d4"
+  }
+}
