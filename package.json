@@ -19,8 +19,8 @@
   "dependencies": {
     "botmaster": "^3.1.1",
     "botmaster-telegram": "^1.0.0",
-    "botmaster-twitter-dm": "^1.0.0",
     "config": "^1.26.1",
-    "sheetsu-node": "0.0.7"
+    "sheetsu-node": "0.0.7",
+    "uuid": "^3.1.0"
   }
 }
