@@ -96,28 +96,32 @@ botmaster.use({
             method: 'GET',
             uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/bot/search?marketID=' + marketId
           }, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-              cacheData.telegram[update.sender.id].apiData = JSON.parse(body)[0];
-              var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
-              var messageText = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()];
-              var questionOptions = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()].split(';');
-              var message = {
-                recipient: {
-                  id: update.sender.id,
-                },
-                message: {
-                  text: messageText,
-                  quick_replies: []
-                },
-              };
-              questionOptions.forEach(function(value) {
-                message.message.quick_replies.push({
-                  title: value
+            try {
+              if (!error && response.statusCode == 200) {
+                cacheData.telegram[update.sender.id].apiData = JSON.parse(body)[0];
+                var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
+                var messageText = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()];
+                var questionOptions = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()].split(';');
+                var message = {
+                  recipient: {
+                    id: update.sender.id,
+                  },
+                  message: {
+                    text: messageText,
+                    quick_replies: []
+                  },
+                };
+                questionOptions.forEach(function(value) {
+                  message.message.quick_replies.push({
+                    title: value
+                  });
                 });
-              });
-              flowMatrix.unshift('prediction');
-              cacheData.telegram[update.sender.id].apiData.flow = flowMatrix.join(';');
-              return bot.sendMessage(message);
+                flowMatrix.unshift('prediction');
+                cacheData.telegram[update.sender.id].apiData.flow = flowMatrix.join(';');
+                return bot.sendMessage(message);
+              }
+            } catch (ex) {
+              console.log(ex);
             }
           });
 
