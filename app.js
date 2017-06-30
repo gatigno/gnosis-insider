@@ -53,7 +53,11 @@ var app = {
         title: value
       });
     });
-    flowMatrix.unshift(questionOptionName.replace('q', 'a'));
+    if (questionOptionName == 'qPrediction') {
+      flowMatrix.unshift('prediction');
+    } else {
+      flowMatrix.unshift(questionOptionName.replace('q', 'a'));
+    }
     if (questionOptionName == 'END') {
       delete cacheData.telegram[update.sender.id];
     } else {
@@ -62,6 +66,118 @@ var app = {
     return message;
     // console.log(cacheData);
     // return bot.sendMessage(message);
+  },
+
+  processTypingMessage: function processTypingMessage(value, seconds, bot, update, questionOptions = [], callback) {
+    setTimeout(function() {
+      const outgoingMessage = bot.createOutgoingMessageFor(update.sender.id);
+      outgoingMessage.addTypingOnSenderAction();
+      bot.sendMessage(outgoingMessage);
+    }, ((seconds * 2) - 1) * 1000);
+
+    setTimeout(function() {
+      const outgoingMessage1 = bot.createOutgoingMessageFor(update.sender.id);
+      app.convertMarkup(value, update, function(returnText) {
+        outgoingMessage1.addText(returnText);
+        if (questionOptions.length > 0) {
+          var options = [];
+          questionOptions.forEach(function(value) {
+            options.push({
+              title: value
+            });
+          });
+          outgoingMessage1.addQuickReplies(options);
+        }
+        bot.sendMessage(outgoingMessage1);
+        callback();
+      });
+
+    }, (((seconds + 1) * 2) - 2) * 1000);
+
+  },
+
+  convertMarkup: function convertMarkup(text, update, callback) {
+    if (text.match(/\[.+\]/g)) {
+      var param = app.getRegexValue(/\[(.+)\]/g, text);
+      switch (true) {
+        case /fName/.test(param):
+          callback(text.replace('[fName]', update.raw.message.from.first_name));
+          break;
+        case /promprt:.+/.test(param):
+          callback(text.replace('[' + param + ']', ''));
+          break;
+        case /data:.+/.test(param):
+          // return text.replace('[' + param + ']', '72%');
+          const apiParams = (param.replace('data:', '')).split('/');
+          const marketID = cacheData.telegram[update.sender.id].apiData.marketID;
+          request({
+            method: 'GET',
+            uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/' + apiParams.shift()
+          }, function(error, response, body) {
+            try {
+              if (!error && response.statusCode == 200) {
+                const fieldName = apiParams.shift();
+                const apiParsedData = JSON.parse(body);
+                for (const key in apiParsedData) {
+                  if(apiParsedData[key].id == marketID || apiParsedData[key].marketID == marketID){
+                      callback(text.replace('[' + param + ']', apiParsedData[key][fieldName]));
+                      break;
+                  }
+                }
+              }
+            } catch (ex) {
+              console.log(ex);
+            }
+          });
+          break;
+        default:
+          callback(text);
+      }
+    } else {
+      callback(text);
+    }
+  },
+  getRegexValue: function getRegexValue(regex, text) {
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      // This is necessary to avoid infinite loops with zero-width matches
+      if (m.index === regex.lastIndex) {
+        regex.lastIndex++;
+      }
+      var param = m[1];
+    }
+    return param;
+  },
+
+  sendMessage: function sendMessage(flowMatrix, bot, update) {
+    var messageText = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()].split('[typing]');
+    var questionOptionName = flowMatrix.shift();
+    if (questionOptionName == 'END') {
+      var questionOptions = [];
+    } else {
+      var questionOptions = cacheData.telegram[update.sender.id].apiData[questionOptionName].split(';');
+    }
+
+    const callbackFunction = function(){
+      if (questionOptionName == 'END') {
+        delete cacheData.telegram[update.sender.id];
+      }
+    }
+
+    for (const key in messageText) {
+      intKey = parseInt(key);
+      if (intKey + 1 == messageText.length) {
+        app.processTypingMessage(messageText[key], intKey + 1, bot, update, questionOptions,callbackFunction);
+      } else {
+        app.processTypingMessage(messageText[key], intKey + 1, bot, update, [], callbackFunction);
+      }
+    };
+    if (questionOptionName == 'qPrediction') {
+      flowMatrix.unshift('prediction');
+    } else {
+      flowMatrix.unshift(questionOptionName.replace('q', 'a'));
+    }
+    cacheData.telegram[update.sender.id].apiData.flow = flowMatrix.join(';');
   }
 }
 
@@ -69,7 +185,6 @@ botmaster.use({
   type: 'incoming',
   name: 'my-middleware',
   controller: (bot, update) => {
-    // console.log(update);
     try {
       if (bot.type === 'telegram') {
         if (!(update.sender.id in cacheData.telegram)) {
@@ -78,10 +193,9 @@ botmaster.use({
             'uuid': uuidv1()
           };
         }
-
-
-        if (update.message.text.match(/\/start \d/g)) {
-          const regex = /\/start (\d)/g;
+        
+        if (update.message.text.match(/\/start \d+/g)) {
+          const regex = /\/start (\d+)/g;
           let m;
 
           while ((m = regex.exec(update.message.text)) !== null) {
@@ -100,25 +214,7 @@ botmaster.use({
               if (!error && response.statusCode == 200) {
                 cacheData.telegram[update.sender.id].apiData = JSON.parse(body)[0];
                 var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
-                var messageText = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()];
-                var questionOptions = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()].split(';');
-                var message = {
-                  recipient: {
-                    id: update.sender.id,
-                  },
-                  message: {
-                    text: messageText,
-                    quick_replies: []
-                  },
-                };
-                questionOptions.forEach(function(value) {
-                  message.message.quick_replies.push({
-                    title: value
-                  });
-                });
-                flowMatrix.unshift('prediction');
-                cacheData.telegram[update.sender.id].apiData.flow = flowMatrix.join(';');
-                return bot.sendMessage(message);
+                app.sendMessage(flowMatrix, bot, update);
               }
             } catch (ex) {
               console.log(ex);
@@ -157,7 +253,8 @@ botmaster.use({
               console.log(err);
             });
           }
-          return bot.sendMessage(app.replyAfterFirstQuestion(update, flowMatrix));
+          app.sendMessage(flowMatrix, bot, update);
+          // return bot.sendMessage(app.replyAfterFirstQuestion(update, flowMatrix));
         }
       }
     } catch (ex) {
