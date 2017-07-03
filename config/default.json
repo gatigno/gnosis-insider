@@ -5,5 +5,8 @@
   },
   "sheetsu": {
     "sheetAddress": "02eb4bdf06d4"
+  },
+  "general":{
+    "adminTelegramId":"383017547"
   }
 }

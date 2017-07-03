@@ -21,9 +21,19 @@ const telegramSettings = {
 };
 
 const telegramBot = new TelegramBot(telegramSettings);
+
+// sending message to admin whenever bot restarts
+telegramBot.sendMessage({
+  recipient: {
+    id: config.get('general.adminTelegramId'),
+  },
+  message: {
+    text: 'bot restarted',
+    quick_replies: []
+  },
+});
+
 botmaster.addBot(telegramBot);
-
-
 
 var cacheData = {
   'telegram': {}
@@ -193,7 +203,7 @@ botmaster.use({
             'uuid': uuidv1()
           };
         }
-        
+
         if (update.message.text.match(/\/start \d+/g)) {
           const regex = /\/start (\d+)/g;
           let m;
