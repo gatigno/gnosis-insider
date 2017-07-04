@@ -37,7 +37,7 @@ cron.schedule('* * * * *', function(){
               text: value.message
             },
           }).then(function(data){
-            var date = new Date();
+            var date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vilnius' }));
             sheetsuClient.update(
               "notificationID", // column name
               value.notificationID, // value to search for
