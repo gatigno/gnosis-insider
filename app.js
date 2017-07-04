@@ -235,7 +235,7 @@ botmaster.use({
           // Adds single row to sheet named "predictions"
           var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
           // console.log(flowMatrix);
-          var date = new Date(update.timestamp);
+          var date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vilnius' }));
           if (cacheData.telegram[update.sender.id].sheet === false) {
             sheetsuClient.create({
               "marketID": cacheData.telegram[update.sender.id].apiData.marketID,
@@ -245,6 +245,29 @@ botmaster.use({
               [flowMatrix.shift()]: update.message.text
             }, "predictions").then(function(data) {
               cacheData.telegram[update.sender.id].sheet = true;
+
+              request({
+                method: 'GET',
+                uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/config'
+              }, function(error, response, body) {
+                try {
+                  if (!error && response.statusCode == 200) {
+                    const configFromSheet = JSON.parse(body)[0];
+                    sheetsuClient.update(
+                      "predictionID", // column name
+                      cacheData.telegram[update.sender.id].uuid, // value to search for
+                      {
+                        "ethBet": configFromSheet['currentBet']
+                      }, // hash with updates
+                      false,
+                      "predictions"
+                    );
+                  }
+                } catch (ex) {
+                  console.log(ex);
+                }
+              });
+
             }, function(err) {
               console.log(err);
             });
