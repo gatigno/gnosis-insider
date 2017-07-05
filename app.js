@@ -1,5 +1,6 @@
 const Botmaster = require('botmaster');
 const TelegramBot = require('botmaster-telegram');
+const SlackBot = require('botmaster-slack');
 const request = require('request');
 const sheetsu = require('sheetsu-node');
 const config = require('config');
@@ -21,6 +22,19 @@ const telegramSettings = {
 };
 
 const telegramBot = new TelegramBot(telegramSettings);
+
+const slackSettings = {
+  credentials: {
+    clientId: config.get('slack.clientId'),
+    clientSecret: config.get('slack.clientSecret'),
+    verificationToken: config.get('slack.verificationToken')
+  },
+  webhookEndpoint: config.get('slack.webhookEndpoint'),
+  storeTeamInfoInFile: true,
+};
+
+const slackBot = new SlackBot(slackSettings);
+botmaster.addBot(slackBot);
 
 // sending message to admin whenever bot restarts
 telegramBot.sendMessage({
@@ -129,9 +143,9 @@ var app = {
                 const fieldName = apiParams.shift();
                 const apiParsedData = JSON.parse(body);
                 for (const key in apiParsedData) {
-                  if(apiParsedData[key].id == marketID || apiParsedData[key].marketID == marketID){
-                      callback(text.replace('[' + param + ']', apiParsedData[key][fieldName]));
-                      break;
+                  if (apiParsedData[key].id == marketID || apiParsedData[key].marketID == marketID) {
+                    callback(text.replace('[' + param + ']', apiParsedData[key][fieldName]));
+                    break;
                   }
                 }
               }
@@ -168,7 +182,7 @@ var app = {
       var questionOptions = cacheData.telegram[update.sender.id].apiData[questionOptionName].split(';');
     }
 
-    const callbackFunction = function(){
+    const callbackFunction = function() {
       if (questionOptionName == 'END') {
         delete cacheData.telegram[update.sender.id];
       }
@@ -177,7 +191,7 @@ var app = {
     for (const key in messageText) {
       intKey = parseInt(key);
       if (intKey + 1 == messageText.length) {
-        app.processTypingMessage(messageText[key], intKey + 1, bot, update, questionOptions,callbackFunction);
+        app.processTypingMessage(messageText[key], intKey + 1, bot, update, questionOptions, callbackFunction);
       } else {
         app.processTypingMessage(messageText[key], intKey + 1, bot, update, [], callbackFunction);
       }
@@ -195,6 +209,7 @@ botmaster.use({
   type: 'incoming',
   name: 'my-middleware',
   controller: (bot, update) => {
+    console.log(update);
     try {
       if (bot.type === 'telegram') {
         if (!(update.sender.id in cacheData.telegram)) {
@@ -235,7 +250,9 @@ botmaster.use({
           // Adds single row to sheet named "predictions"
           var flowMatrix = cacheData.telegram[update.sender.id].apiData.flow.split(';');
           // console.log(flowMatrix);
-          var date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vilnius' }));
+          var date = new Date(new Date().toLocaleString('en-US', {
+            timeZone: 'Europe/Vilnius'
+          }));
           if (cacheData.telegram[update.sender.id].sheet === false) {
             sheetsuClient.create({
               "marketID": cacheData.telegram[update.sender.id].apiData.marketID,
@@ -288,6 +305,10 @@ botmaster.use({
           }
           app.sendMessage(flowMatrix, bot, update);
           // return bot.sendMessage(app.replyAfterFirstQuestion(update, flowMatrix));
+        }
+      } else if (bot.type === 'slack') {
+        if(update.raw.event.user !== 'U64NBD1UN'){
+            return bot.reply(update, update.message.text);
         }
       }
     } catch (ex) {

@@ -8,5 +8,11 @@
   },
   "general":{
     "adminTelegramId":"383017547"
+  },
+  "slack":{
+    "clientId":"",
+    "clientSecret":"",
+    "verificationToken":"",
+    "webhookEndpoint": "/webhook1234/"
   }
 }
