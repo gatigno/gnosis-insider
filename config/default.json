@@ -13,6 +13,7 @@
     "clientId":"",
     "clientSecret":"",
     "verificationToken":"",
-    "webhookEndpoint": "/webhook1234/"
+    "webhookEndpoint": "/webhook1234/",
+    "botId":"U64NBD1UN"
   }
 }

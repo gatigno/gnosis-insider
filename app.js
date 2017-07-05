@@ -307,8 +307,11 @@ botmaster.use({
           // return bot.sendMessage(app.replyAfterFirstQuestion(update, flowMatrix));
         }
       } else if (bot.type === 'slack') {
-        if(update.raw.event.user !== 'U64NBD1UN'){
-            return bot.reply(update, update.message.text);
+        if(update.raw.event.user !== config.get('slack.botId')){
+            if(update.message.text.indexOf(config.get('slack.botId')) !== -1){
+                return bot.reply(update, 'Current prediction is that Agrello will raise $130M. \n This prediction was aggregated from 27 users in this channel, backed by a total of $1203.');
+            }
+
         }
       }
     } catch (ex) {
