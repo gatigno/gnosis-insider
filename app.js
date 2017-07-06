@@ -5,7 +5,10 @@ const request = require('request');
 const sheetsu = require('sheetsu-node');
 const config = require('config');
 const uuidv1 = require('uuid/v1');
-const botmaster = new Botmaster();
+const botmasterSettings = {
+  port: config.get('port')
+}
+const botmaster = new Botmaster(botmasterSettings);
 
 // create a sheetsu config file
 const sheetsuConfig = {
