@@ -7,6 +7,5 @@ gnosis-insider
 
 * runnning app with environment
 ```
-export NODE_ENV=production
-node app.js
+pm2 start ecosystem.config.js --env production
 ```
