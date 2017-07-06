@@ -209,7 +209,7 @@ botmaster.use({
   type: 'incoming',
   name: 'my-middleware',
   controller: (bot, update) => {
-    console.log(update);
+    // console.log(update);
     try {
       if (bot.type === 'telegram') {
         if (!(update.sender.id in cacheData.telegram)) {
