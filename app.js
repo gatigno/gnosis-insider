@@ -5,7 +5,10 @@ const request = require('request');
 const sheetsu = require('sheetsu-node');
 const config = require('config');
 const uuidv1 = require('uuid/v1');
-const botmaster = new Botmaster();
+const botmasterSettings = {
+  port: config.get('port')
+}
+const botmaster = new Botmaster(botmasterSettings);
 
 // create a sheetsu config file
 const sheetsuConfig = {
@@ -209,7 +212,7 @@ botmaster.use({
   type: 'incoming',
   name: 'my-middleware',
   controller: (bot, update) => {
-    console.log(update);
+    // console.log(update);
     try {
       if (bot.type === 'telegram') {
         if (!(update.sender.id in cacheData.telegram)) {
