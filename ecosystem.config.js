@@ -1,6 +1,7 @@
 module.exports = {
   apps : [
       {
+        name: "GNOSIS-"+process.env.NODE_ENV,
         script: "./app.js",
         watch: true,
         env: {
