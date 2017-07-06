@@ -1,7 +1,18 @@
+var getName = false;
+var processName = "GNOSIS-";
+for (const key in process.argv) {
+  var value = process.argv[key];
+  if(getName === true){
+    processName += value;
+  }
+  if(value == '--name'){
+    getName = true;
+  }
+}
 module.exports = {
   apps : [
       {
-        name: "GNOSIS-"+process.env.NODE_ENV,
+        name: processName,
         script: "./app.js",
         watch: true,
         env: {
