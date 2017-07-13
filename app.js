@@ -82,6 +82,8 @@ var app = {
     });
     if (questionOptionName == 'qPrediction') {
       flowMatrix.unshift('prediction');
+    } else if (questionOptionName == 'qBet'){
+      flowMatrix.unshift('ethBet');
     } else {
       flowMatrix.unshift(questionOptionName.replace('q', 'a'));
     }
@@ -201,6 +203,8 @@ var app = {
     };
     if (questionOptionName == 'qPrediction') {
       flowMatrix.unshift('prediction');
+    } else if (questionOptionName == 'qBet'){
+      flowMatrix.unshift('ethBet');
     } else {
       flowMatrix.unshift(questionOptionName.replace('q', 'a'));
     }
@@ -266,27 +270,27 @@ botmaster.use({
             }, "predictions").then(function(data) {
               cacheData.telegram[update.sender.id].sheet = true;
 
-              request({
-                method: 'GET',
-                uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/config'
-              }, function(error, response, body) {
-                try {
-                  if (!error && response.statusCode == 200) {
-                    const configFromSheet = JSON.parse(body)[0];
-                    sheetsuClient.update(
-                      "predictionID", // column name
-                      cacheData.telegram[update.sender.id].uuid, // value to search for
-                      {
-                        "ethBet": configFromSheet['currentBet']
-                      }, // hash with updates
-                      false,
-                      "predictions"
-                    );
-                  }
-                } catch (ex) {
-                  console.log(ex);
-                }
-              });
+              // request({
+              //   method: 'GET',
+              //   uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/config'
+              // }, function(error, response, body) {
+              //   try {
+              //     if (!error && response.statusCode == 200) {
+              //       const configFromSheet = JSON.parse(body)[0];
+              //       sheetsuClient.update(
+              //         "predictionID", // column name
+              //         cacheData.telegram[update.sender.id].uuid, // value to search for
+              //         {
+              //           "ethBet": configFromSheet['currentBet']
+              //         }, // hash with updates
+              //         false,
+              //         "predictions"
+              //       );
+              //     }
+              //   } catch (ex) {
+              //     console.log(ex);
+              //   }
+              // });
 
             }, function(err) {
               console.log(err);
