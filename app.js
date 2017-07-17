@@ -5,10 +5,19 @@ const request = require('request');
 const sheetsu = require('sheetsu-node');
 const config = require('config');
 const uuidv1 = require('uuid/v1');
-const botmasterSettings = {
-  port: config.get('port')
-}
-const botmaster = new Botmaster(botmasterSettings);
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const expressApp = express(); // added
+const myServer = expressApp.listen(config.get('port'), '0.0.0.0'); // added
+
+var slackCommands;
+
+const botmaster = new Botmaster({
+  server: myServer, // added
+});
+
+
 
 // create a sheetsu config file
 const sheetsuConfig = {
@@ -40,15 +49,15 @@ const slackBot = new SlackBot(slackSettings);
 botmaster.addBot(slackBot);
 
 // sending message to admin whenever bot restarts
-telegramBot.sendMessage({
-  recipient: {
-    id: config.get('general.adminTelegramId'),
-  },
-  message: {
-    text: 'bot restarted',
-    quick_replies: []
-  },
-});
+// telegramBot.sendMessage({
+//   recipient: {
+//     id: config.get('general.adminTelegramId'),
+//   },
+//   message: {
+//     text: 'bot restarted',
+//     quick_replies: []
+//   },
+// });
 
 botmaster.addBot(telegramBot);
 
@@ -57,6 +66,21 @@ var cacheData = {
 };
 
 var app = {
+  cacheSlackCommands: function cacheSlackCommands() {
+    request({
+      method: 'GET',
+      uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/slackCommands'
+    }, function(error, response, body) {
+      try {
+        if (!error && response.statusCode == 200) {
+          slackCommands = JSON.parse(body);
+          console.log('slack command refreshed');
+        }
+      } catch (ex) {
+        console.log(ex);
+      }
+    });
+  },
   replyAfterFirstQuestion: function replyAfterFirstQuestion(update, flowMatrix) {
 
     var messageText = cacheData.telegram[update.sender.id].apiData[flowMatrix.shift()];
@@ -82,7 +106,7 @@ var app = {
     });
     if (questionOptionName == 'qPrediction') {
       flowMatrix.unshift('prediction');
-    } else if (questionOptionName == 'qBet'){
+    } else if (questionOptionName == 'qBet') {
       flowMatrix.unshift('ethBet');
     } else {
       flowMatrix.unshift(questionOptionName.replace('q', 'a'));
@@ -203,7 +227,7 @@ var app = {
     };
     if (questionOptionName == 'qPrediction') {
       flowMatrix.unshift('prediction');
-    } else if (questionOptionName == 'qBet'){
+    } else if (questionOptionName == 'qBet') {
       flowMatrix.unshift('ethBet');
     } else {
       flowMatrix.unshift(questionOptionName.replace('q', 'a'));
@@ -216,7 +240,7 @@ botmaster.use({
   type: 'incoming',
   name: 'my-middleware',
   controller: (bot, update) => {
-    // console.log(update);
+    console.log(update);
     try {
       if (bot.type === 'telegram') {
         if (!(update.sender.id in cacheData.telegram)) {
@@ -314,10 +338,10 @@ botmaster.use({
           // return bot.sendMessage(app.replyAfterFirstQuestion(update, flowMatrix));
         }
       } else if (bot.type === 'slack') {
-        if(update.raw.event.user !== config.get('slack.botId')){
-            if(update.message.text.indexOf(config.get('slack.botId')) !== -1){
-                return bot.reply(update, 'Current prediction is that Agrello will raise $130M. \n This prediction was aggregated from 27 users in this channel, backed by a total of $1203.');
-            }
+        if (update.raw.event.user !== config.get('slack.botId')) {
+          if (update.message.text.indexOf(config.get('slack.botId')) !== -1) {
+            return bot.reply(update, 'Current prediction is that Agrello will raise $130M. \n This prediction was aggregated from 27 users in this channel, backed by a total of $1203.');
+          }
 
         }
       }
@@ -326,4 +350,38 @@ botmaster.use({
     }
 
   }
+});
+
+app.cacheSlackCommands();
+
+
+expressApp.use(bodyParser.json());
+expressApp.use(bodyParser.urlencoded({ // to support URL-encoded bodies
+  extended: true
+}));
+
+expressApp.use('/slackSlash', function(req, res) {
+  console.log('1');
+  if (req.body.command === '/gnosis') {
+    switch (req.body.text) {
+      case 'reload':
+        app.cacheSlackCommands();
+        res.end('DONE');
+        break;
+      default:
+        for (const key in slackCommands) {
+          if (slackCommands[key]['name'] == req.body.text) {
+            res.setHeader('content-type', 'application/json');
+            res.end(slackCommands[key]['jsonMessage']);
+            break;
+          }
+        }
+        break;
+    }
+  }
+});
+
+expressApp.use('/slackSlashInteractive', function(req, res) {
+  console.log('2');
+  console.log(req.body);
 });
