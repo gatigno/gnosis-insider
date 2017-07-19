@@ -12,6 +12,7 @@ const expressApp = express(); // added
 const myServer = expressApp.listen(config.get('port'), '0.0.0.0'); // added
 
 var slackCommands;
+var botDbData;
 
 const botmaster = new Botmaster({
   server: myServer, // added
@@ -75,6 +76,21 @@ var app = {
         if (!error && response.statusCode == 200) {
           slackCommands = JSON.parse(body);
           console.log('slack command refreshed');
+        }
+      } catch (ex) {
+        console.log(ex);
+      }
+    });
+  },
+  cachebotDbData: function cachebotDbData() {
+    request({
+      method: 'GET',
+      uri: 'https://sheetsu.com/apis/v1.0/02eb4bdf06d4/sheets/bot'
+    }, function(error, response, body) {
+      try {
+        if (!error && response.statusCode == 200) {
+          botDbData = JSON.parse(body);
+          console.log('bot data refreshed');
         }
       } catch (ex) {
         console.log(ex);
@@ -353,6 +369,7 @@ botmaster.use({
 });
 
 app.cacheSlackCommands();
+app.cachebotDbData();
 
 
 expressApp.use(bodyParser.json());
@@ -361,7 +378,7 @@ expressApp.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 }));
 
 expressApp.use('/slackSlash', function(req, res) {
-  console.log('1');
+  console.log(req.body.text);
   if (req.body.command === '/gnosis') {
     switch (req.body.text) {
       case 'reload':
@@ -369,13 +386,26 @@ expressApp.use('/slackSlash', function(req, res) {
         res.end('DONE');
         break;
       default:
-        for (const key in slackCommands) {
-          if (slackCommands[key]['name'] == req.body.text) {
-            res.setHeader('content-type', 'application/json');
-            res.end(slackCommands[key]['jsonMessage']);
-            break;
+        if (/market \d+/.test(req.body.text)) {
+          const marketId = app.getRegexValue(/market (\d+)/g, req.body.text);
+          for (const key in botDbData) {
+            if (botDbData[key]['marketID'] == marketId) {
+              res.setHeader('content-type', 'application/json');
+              res.end(botDbData[key]['t1']);
+              break;
+            }
+          }
+          console.log(marketId);
+        } else {
+          for (const key in slackCommands) {
+            if (slackCommands[key]['name'] == req.body.text) {
+              res.setHeader('content-type', 'application/json');
+              res.end(slackCommands[key]['jsonMessage']);
+              break;
+            }
           }
         }
+
         break;
     }
   }
@@ -383,5 +413,18 @@ expressApp.use('/slackSlash', function(req, res) {
 
 expressApp.use('/slackSlashInteractive', function(req, res) {
   console.log('2');
-  console.log(req.body);
+  const payload = JSON.parse(req.body.payload);
+  console.log(payload);
+  for (const key in botDbData) {
+    if (botDbData[key]['marketID'] == 13) {
+      res.setHeader('content-type', 'application/json');
+      if (payload.callback_id == '[cb_prediction]') {
+        res.end(botDbData[key]['t2']);
+      } else {
+        res.end(botDbData[key]['t3']);
+      }
+
+      break;
+    }
+  }
 });
