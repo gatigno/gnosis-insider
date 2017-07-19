@@ -50,15 +50,15 @@ const slackBot = new SlackBot(slackSettings);
 botmaster.addBot(slackBot);
 
 // sending message to admin whenever bot restarts
-// telegramBot.sendMessage({
-//   recipient: {
-//     id: config.get('general.adminTelegramId'),
-//   },
-//   message: {
-//     text: 'bot restarted',
-//     quick_replies: []
-//   },
-// });
+telegramBot.sendMessage({
+  recipient: {
+    id: config.get('general.adminTelegramId'),
+  },
+  message: {
+    text: 'bot restarted',
+    quick_replies: []
+  },
+});
 
 botmaster.addBot(telegramBot);
 
