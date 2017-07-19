@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/gatigno/gnosis-insider#readme",
   "dependencies": {
+    "body-parser": "^1.17.2",
     "botmaster": "^3.1.1",
     "botmaster-slack": "^1.0.0",
     "botmaster-telegram": "^1.0.0",
