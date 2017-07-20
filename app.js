@@ -378,7 +378,6 @@ expressApp.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 }));
 
 expressApp.use('/slackSlash', function(req, res) {
-  console.log(req.body.text);
   if (req.body.command === '/gnosis') {
     switch (req.body.text) {
       case 'reload':
@@ -390,12 +389,12 @@ expressApp.use('/slackSlash', function(req, res) {
           const marketId = app.getRegexValue(/market (\d+)/g, req.body.text);
           for (const key in botDbData) {
             if (botDbData[key]['marketID'] == marketId) {
+              const flow = (botDbData[key]['flow']).split(';');
               res.setHeader('content-type', 'application/json');
-              res.end(botDbData[key]['t1']);
+              res.end(botDbData[key][flow[0]]);
               break;
             }
           }
-          console.log(marketId);
         } else {
           for (const key in slackCommands) {
             if (slackCommands[key]['name'] == req.body.text) {
@@ -405,25 +404,20 @@ expressApp.use('/slackSlash', function(req, res) {
             }
           }
         }
-
         break;
     }
   }
 });
 
 expressApp.use('/slackSlashInteractive', function(req, res) {
-  console.log('2');
   const payload = JSON.parse(req.body.payload);
-  console.log(payload);
+  const callback = payload.callback_id.split('-');
   for (const key in botDbData) {
-    if (botDbData[key]['marketID'] == 13) {
+    if (botDbData[key]['marketID'] == callback[1]) {
+      const flow = (botDbData[key]['flow']).split(';');
+      const nextFlow = flow[(flow.indexOf(callback[0])) + 1];
       res.setHeader('content-type', 'application/json');
-      if (payload.callback_id == '[cb_prediction]') {
-        res.end(botDbData[key]['t2']);
-      } else {
-        res.end(botDbData[key]['t3']);
-      }
-
+      res.end(botDbData[key][nextFlow]);
       break;
     }
   }
