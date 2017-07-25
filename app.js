@@ -384,6 +384,8 @@ expressApp.use('/slackSlash', function(req, res) {
         app.cacheSlackCommands();
         res.end('DONE');
         break;
+      case '':
+        req.body.text = 'dashboard';
       default:
         if (/market \d+/.test(req.body.text)) {
           const marketId = app.getRegexValue(/market (\d+)/g, req.body.text);
@@ -411,14 +413,27 @@ expressApp.use('/slackSlash', function(req, res) {
 
 expressApp.use('/slackSlashInteractive', function(req, res) {
   const payload = JSON.parse(req.body.payload);
-  const callback = payload.callback_id.split('-');
-  for (const key in botDbData) {
-    if (botDbData[key]['marketID'] == callback[1]) {
-      const flow = (botDbData[key]['flow']).split(';');
-      const nextFlow = flow[(flow.indexOf(callback[0])) + 1];
-      res.setHeader('content-type', 'application/json');
-      res.end(botDbData[key][nextFlow]);
-      break;
+  console.log(payload);
+  if (payload.callback_id == 'market-dashboard') {
+    for (const key in botDbData) {
+      if (botDbData[key]['marketID'] == payload['actions'][0]['value']) {
+        const flow = (botDbData[key]['flow']).split(';');
+        res.setHeader('content-type', 'application/json');
+        res.end(botDbData[key][flow[0]]);
+        break;
+      }
+    }
+  } else {
+    const callback = payload.callback_id.split('-');
+    for (const key in botDbData) {
+      if (botDbData[key]['marketID'] == callback[1]) {
+        const flow = (botDbData[key]['flow']).split(';');
+        const nextFlow = flow[(flow.indexOf(callback[0])) + 1];
+        res.setHeader('content-type', 'application/json');
+        res.end(botDbData[key][nextFlow]);
+        break;
+      }
     }
   }
+
 });
